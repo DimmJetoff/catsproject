@@ -51,6 +51,7 @@ export default {
     backCatalog() {
       console.log(this.cats)
       this.$router.push("/PageCatalog");
+      // localStorage.title = this.cardData.title
     },
 
     dataInCard() {

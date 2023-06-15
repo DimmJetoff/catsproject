@@ -1,12 +1,22 @@
 <template>
-  <div class="container" @click="hideList" @keydown.esc="hideList">
+  <div class="container" ref="container" @click="hideList">
     <aside class="sidebar">
-      <div class="section__button button-section sidebar__button ">
+      <div class="section__button button-section sidebar__button">
         <button @click="visibleForm" type="reset" class="button-section__btn">
           Фильтры
         </button>
       </div>
-      <form class="form" :class="{active__filter:isActive}" method="post" >
+      <form class="form" :class="{ active__filter: isActive }" method="post">
+        <ul v-if="showCategory" class="section__items">
+          <li
+            class="section__item"
+            v-for="category in categories.options"
+            :key="category.id"
+            @click="changeCategory(category.id)"
+          >
+            {{ category.label }}
+          </li>
+        </ul>
         <fieldset class="section">
           <div class="">
             <input
@@ -31,23 +41,12 @@
               />
             </div>
           </div>
-          <ul v-if="showCategory" class="section__items">
-            <li
-              class="section__item"
-              v-for="category in categories.options"
-              :key="category.id"
-              @click="changeCategory(category.id)"
-            >
-              {{ category.label }}
-            </li>
-          </ul>
           <div class="section__checkbox checkbox-section">
             <label class="checkbox-section__label">
               <input
                 type="checkbox"
                 class="checkbox-section__input"
                 v-model="checkboxFree"
-                @click="resetCkeckbox"
               />Бесплатные
             </label>
             <label class="checkbox-section__label">
@@ -55,51 +54,71 @@
                 type="checkbox"
                 class="checkbox-section__input"
                 v-model="checkboxPaid"
-                @click="resetCkeckbox"
               />Платные
             </label>
           </div>
         </fieldset>
       </form>
-      <div class="section__button button-section button-section__but" :class="{active__filter:isActive}">
+      <div
+        class="section__button button-section button-section__but"
+        :class="{ active__filter: isActive }"
+      >
         <!-- <button type="button" class="button-section__btn">Применить</button> -->
-        <button @click="resetForm" type="reset" class="button-section__btn">
+        <button @click="resetForm" type="radio" class="button-section__btn">
           Сбросить
         </button>
         <!-- <input type="reset" value="Сбросить" class="button-section__input" /> -->
       </div>
     </aside>
     <main class="main">
-      <h1 class="title">Каталог</h1>
-      <ul class="card__list">
-        <li
-          class="card__item"
-          v-for="(cat, index) in checkboxCatsFree"
-          :key="index"
+      <div class="control">
+        <h1 class="control__title">Каталог</h1>
+        <div
+          class="control__icon"
+          :class="{ rotateIcon: activeRotate }"
+          @click="showPriceSort"
         >
-          <div class="card__cartoon" v-if="cat.img">
-            <img :src="cat.img" alt="Карточка кота" class="card__img" />
-          </div>
-
-          <div class="card__cartoon" v-else>
-            <img
-              src="../assets/add_a_photo_FILL0_wght400_GRAD0_opsz48.svg"
-              alt="Карточка кота"
-              class="card__img"
-            />
-          </div>
-
-          <router-link
-            class="card__btn"
-            :to="{ name: 'IndexCard', params: { id: cat.id } }"
+          <span></span>
+          <img
+            src="../assets/Vector 163.svg"
+            class="control__pic"
+            :class="{ control__picture: noRotateVector }"
+          />
+          <p :class="{ control__text: noRotate }">По цене</p>
+        </div>
+      </div>
+      <ul class="card__list">
+        <template v-if="checkboxCatsFree.length">
+          <li
+            class="card__item"
+            v-for="(cat, index) in checkboxCatsFree"
+            :key="index"
           >
-            <h2 class="card__title">{{ cat.title }}</h2>
-          </router-link>
+            <div class="card__cartoon" v-if="cat.img">
+              <img :src="cat.img" alt="Карточка кота" class="card__img" />
+            </div>
 
-          <p class="card__price">
-            {{ cat.price === 0 ? "Бесплатно" : cat.price }}
-          </p>
-        </li>
+            <div class="card__cartoon" v-else>
+              <img
+                src="../assets/add_a_photo_FILL0_wght400_GRAD0_opsz48.svg"
+                alt="Карточка кота"
+                class="card__img"
+              />
+            </div>
+
+            <router-link
+              class="card__btn"
+              :to="{ name: 'IndexCard', params: { id: cat.id } }"
+            >
+              <h2 class="card__title">{{ cat.title }}</h2>
+            </router-link>
+
+            <p class="card__price">
+              {{ cat.price === 0 ? "Бесплатно" : cat.price }}
+            </p>
+          </li>
+        </template>
+        <div v-else>Сожалеем, но таких котиков пока нет.</div>
       </ul>
     </main>
   </div>
@@ -127,14 +146,25 @@ export default {
       checkboxPaid: false,
       degrise: null,
       show: true,
-      isActive: false
+      isActive: false,
+      activeRotate: false,
+      noRotate: false,
+      displayIcon: false,
+      noRotateVector: false,
     };
   },
 
   computed: {
+    sortCats() {
+      const catsSort = JSON.parse(JSON.stringify(this.catsFriends));
+      if (this.activeRotate === true) {
+        return catsSort.sort((a, b) => b.price - a.price);
+      }
+      return catsSort.sort((a, b) => a.price - b.price);
+    },
+
     searchCats() {
-      console.log(this.catsFriends);
-      return this.catsFriends.filter(
+      return this.sortCats.filter(
         (item) =>
           item.title
             .toLowerCase()
@@ -162,9 +192,32 @@ export default {
 
     checkboxCatsFree() {
       if (this.checkboxFree) {
+        console.log(this.categoriesCats);
+        console.log(this.categoriesCats.filter((item) => !item.price));
         return this.categoriesCats.filter((item) => !item.price);
       }
       return this.checkboxCatsPaid;
+      // рабочий вариант с использованием value и массива с этими value//
+
+      // checkboxCatsFree() {
+      //   if (this.checkboxCats.includes('free')) {
+      //     return this.categoriesCats.filter(item => !item.price)
+      //   } else if (this.checkboxCats.includes('paid')) {
+      //     return this.categoriesCats.filter(item => item.price)
+      //   }
+      //   return this.categoriesCats
+      // },
+
+      // еще один вариант без value//
+
+      // checkboxCatsFreeOrPaid() {
+      //   if (this.checkboxFree) {
+      //     return this.categoriesCats.filter((item) => !item.price)
+      //   } else if (this.checkboxPaid) {
+      //     return this.categoriesCats.filter((item) => item.price)
+      //   }
+      //   return this.categoriesCats
+      // }
     },
 
     checkboxCatsPaid() {
@@ -173,31 +226,20 @@ export default {
       }
       return this.categoriesCats;
     },
+  },
 
-    // мой рабочий вариант с использованием value и массива с этими value//
-
-    // checkboxCatsFree() {
-    //   if (this.checkboxCats.includes('free')) {
-    //     return this.categoriesCats.filter(item => !item.price)
-    //   } else if (this.checkboxCats.includes('paid')) {
-    //     return this.categoriesCats.filter(item => item.price)
-    //   }
-    //   return this.categoriesCats
-    // },
-
-    // еще один вариант без value//
-
-    // checkboxCatsFreeOrPaid() {
-    //   if (this.checkboxFree) {
-    //     return this.categoriesCats.filter((item) => !item.price)
-    //   } else if (this.checkboxPaid) {
-    //     return this.categoriesCats.filter((item) => item.price)
-    //   }
-    //   return this.categoriesCats
-    // }
+  mounted() {
+    // this.backFilter()
   },
 
   methods: {
+    // backFilter() {
+    //   if (localStorage.title) {
+    //     this.checkboxFree = true
+    //     localStorage.clear()
+    //   }
+    // },
+
     iconHandle() {
       this.show = !this.show;
       if (this.show) {
@@ -219,7 +261,6 @@ export default {
     },
 
     changeCategory(id) {
-      console.log("fdfs");
       if (this.categories.options.length) {
         for (const elem of this.categories.options) {
           if (elem.id === id) {
@@ -236,7 +277,8 @@ export default {
       this.categoryId = id;
     },
 
-    // Мой вариант фильтрации с помощью чекбоксов через метод
+
+    // вариант фильтрации с помощью чекбоксов через метод
 
     // changePrice(event) {
     //   if (event.target.checked) {
@@ -253,23 +295,33 @@ export default {
     resetForm() {
       // (this.categoriesCats = this.catsValues),
       (this.searchCategory = ""),
-        (this.categoryId = null),
-        (this.$refs.category.textContent = "Выберите категорию");
-      (this.checkboxFree = false), (this.checkboxPaid = false);
+      (this.categoryId = null),
+      (this.$refs.category.textContent = "Выберите категорию"),
+      (this.checkboxFree = false),
+      (this.checkboxPaid = false)
       // this.checkboxCats = []
-    },
-
-    resetCkeckbox() {
-      this.checkboxFree = false;
-      this.checkboxPaid = false;
+      if (this.$refs.container.style.width < 768) {
+          this.isActive = false
+      }
     },
 
     visibleForm() {
-      console.log('222');
       this.isActive = !this.isActive;
-      console.log(this.isActive);
+    },
 
-    }
+    showPriceSort() {
+      this.activeRotate = !this.activeRotate;
+      this.noRotate = !this.noRotate;
+      this.displayIcon = !this.displayIcon;
+      this.noRotateVector = !this.noRotateVector;
+
+      //Вариант сортировки через метод
+      // if (this.activeRotate === true) {
+      //   this.checkboxCatsFree.sort((a, b) => a.price - b.price);
+      // } else {
+      //   this.checkboxCatsFree.sort((a, b) => b.price - a.price);
+      // }
+    },
   },
 };
 </script>
@@ -282,7 +334,6 @@ export default {
   margin: 0;
   flex-grow: 1;
   width: 100%;
-  // overflow-y: hidden;
 }
 
 // .container:hover {
@@ -297,7 +348,6 @@ export default {
   padding: 30px;
 }
 
-
 .sidebar__button {
   visibility: hidden;
 }
@@ -309,6 +359,7 @@ export default {
   border: 0;
   gap: 20px;
   width: 250px;
+  position: relative;
 }
 
 .input-section {
@@ -368,6 +419,11 @@ export default {
   border: 1px solid gray;
   border-radius: 14px;
   margin-top: -15px;
+  position: absolute;
+  width: 255px;
+  top: 360px;
+  z-index: 100;
+  background-color: white;
 }
 
 .section__item {
@@ -416,12 +472,12 @@ export default {
   height: 40px;
   border: 1px solid #724df0;
   border-radius: 24px;
-  color: #724df0;
+  cursor: pointer;
+  // color: #724df0;
 }
 
-.button-section__btn:hover {
+.button-section__btn:active {
   background: #724df0;
-  cursor: pointer;
   color: white;
 }
 
@@ -447,9 +503,84 @@ export default {
   width: 100%;
 }
 
-.title {
-  padding: 50px 0 0 0;
+.control {
+  display: flex;
+  height: 150px;
+  flex-direction: column;
+  width: 100%;
+  justify-content: space-between;
+
+  &__title {
+    padding: 50px 0 0 0;
+    margin: 0;
+  }
+}
+
+.control__icon {
+  display: flex;
+  width: 200px;
+  height: 30px;
+  align-self: flex-end;
+  align-items: center;
+}
+
+.control__icon:hover {
+  cursor: pointer;
+}
+
+.control__icon span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background-color: black;
+  margin-right: 10px;
+  margin-left: 20px;
+}
+
+.control__icon span::before,
+.control__icon span::after {
+  display: block;
+  background-color: black;
+  content: "";
+  height: 2px;
+}
+
+.control__icon span::before {
+  transform: translate(0, -8px);
+  width: 15px;
+}
+
+.control__icon span::after {
+  width: 25px;
+  transform: translate(0, 5px);
+}
+
+.control__pic {
+  height: 20px;
+  margin-top: -2px;
+  margin-right: 5px;
+}
+
+.rotateIcon {
+  transform: rotate(180deg) translate(140px, 0);
+}
+
+.control__picture {
+  transform: translate(-45px);
+  margin-left: -5px;
+  margin-right: 18px;
+}
+
+.control__img {
+  display: flex;
+  flex-direction: column;
+  height: 105px;
+  justify-content: flex-start;
+}
+
+.control__text {
   margin: 0;
+  transform: translate(-150px, 0) rotate(180deg);
 }
 
 .card__list {
@@ -458,7 +589,6 @@ export default {
   justify-content: center;
   gap: 15px;
   list-style: none;
-  margin: 50px 0;
   padding: 0;
 }
 
@@ -508,41 +638,52 @@ export default {
   align-self: flex-end;
 }
 
-
-
-
 @media (max-width: 768px) {
   .sidebar__button {
     visibility: visible;
   }
   .form {
-    visibility: hidden;
+    display: none;
   }
   .button-section__but {
-    visibility: hidden;
+    display: none;
   }
 
   .container {
     flex-direction: column;
   }
 
-  .form {
-  justify-content: center;
- }
-  // .sidebar {
-  //   height: 10vh;
-  // }
   .sidebar {
+    height: -moz-fit-content;
     height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
- }
 
+  .section {
+    padding: 16px;
+  }
 
+  .sidebar__button {
+    margin-bottom: 10px;
+  }
 
-  .active__filter {
-  visibility: visible;
-  background-color: white;
+  .main {
+    justify-content: center;
+  }
+
+  .button-section__btn:active {
+  background: #724df0;
+  color: white;
+  }
+
 }
 
 
+
+.active__filter {
+  display: flex;
+  background-color: white;
+}
 </style>

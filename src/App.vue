@@ -1,9 +1,10 @@
 <template>
   <div id="app">
     <page-header></page-header>
-    <router-view></router-view>
+    <KeepAlive>
+      <router-view></router-view>
+    </KeepAlive>
     <page-footer></page-footer>
-
   </div>
 </template>
 
@@ -15,7 +16,7 @@ export default {
   name: "App",
   components: {
     PageHeader,
-    PageFooter
+    PageFooter,
   },
 };
 </script>
@@ -28,6 +29,4 @@ export default {
   flex-direction: column;
   height: 100vh;
 }
-
-
 </style>
